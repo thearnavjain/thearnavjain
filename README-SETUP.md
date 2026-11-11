@@ -2,7 +2,7 @@
 
 This folder is the ready-to-push contents of the `thearnavjain/thearnavjain` profile repository. The repository name must match the GitHub login exactly for GitHub to use its README on the profile page.
 
-The visual system follows [arnavjain.io](https://arnavjain.io): warm paper `#F4F4F9`, ink `#252227`, muted blue `#4C5573`, terracotta `#895A4E`, and the site's Instrument Serif, Inter, and IBM Plex Mono fonts. The script subsets those fonts with `pyftsubset` and embeds the resulting WOFF files in each SVG.
+The profile copy follows the connected GitHub bio: BTech CSE freshman at Manipal University Jaipur, with interests in web development, graphics, game development, and motorsports telemetry. The script subsets Instrument Serif, Inter, and IBM Plex Mono with `pyftsubset` and embeds the resulting WOFF files in each SVG.
 
 ## Preview
 

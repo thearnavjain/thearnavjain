@@ -1,16 +1,12 @@
 {
   "login": "thearnavjain",
   "name": "Arnav Jain",
-  "tagline": "Co-founder & CFO connecting security engineering with sustainable growth.",
-  "location": "Austin, Texas",
-  "website": "https://arnavjain.io",
-  "portrait": "https://arnavjain.io/headshot.png",
+  "tagline": "BTech CSE freshman exploring web, graphics, game development & motorsports telemetry.",
+  "education": "BTech Computer Science & Engineering · Manipal University Jaipur",
+  "interests": "Web development · Graphics · Game development · Telemetry analysis / motorsports",
+  "location": "Pune / Jaipur, India",
+  "portrait": "https://avatars.githubusercontent.com/u/307112695?v=4",
   "brand_color": "#895a4e",
-  "links": [
-    "https://arnavjain.io",
-    "https://www.linkedin.com/in/jainarnav/",
-    "https://github.com/thearnavjain"
-  ],
   "featured_repos": [
     {
       "name": "reworked",

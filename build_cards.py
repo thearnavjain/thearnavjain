@@ -107,13 +107,13 @@ def fonts_css() -> str:
 
 def common_style(font_css: str, delay: float, static: bool) -> str:
     motion = "" if static else f".enter{{animation:rise .8s cubic-bezier(.2,.75,.25,1) {delay:.2f}s both}} .draw{{animation:draw 1s ease {delay + .35:.2f}s both}} .pulse{{animation:pulse 3.6s ease-in-out {delay + .8:.2f}s infinite}}"
-    static_css = ".static .enter,.static .draw,.static .pulse{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}.static .motion{display:none!important}"
+    static_css = ".static .enter,.static .draw,.static .pulse{animation:none!important;opacity:1!important;stroke-dashoffset:0!important}.static .motion{display:none!important}"
     return f"""<style>{font_css}
 :root{{--paper:#f4f4f9;--ink:#252227;--muted:#4c5573;--faint:#7a4e42;--accent:#895a4e;--line:#2522271c;--sans:'Inter',Arial,sans-serif;--serif:'Instrument Serif',Georgia,serif;--mono:'IBM Plex Mono',monospace}}
 *{{box-sizing:border-box}}text{{fill:var(--ink)}}.muted{{fill:var(--muted)}}.faint{{fill:var(--faint)}}.serif{{font-family:var(--serif)}}.sans{{font-family:var(--sans)}}.mono{{font-family:var(--mono)}}
-.card{{fill:var(--paper);stroke:var(--line);stroke-width:1}}.accent{{fill:var(--accent)}}.rule{{stroke:var(--line);stroke-width:1}}.enter{{opacity:1}}@keyframes rise{{from{{opacity:0;transform:translateY(14px)}}to{{opacity:1;transform:translateY(0)}}}}@keyframes draw{{from{{stroke-dashoffset:1200}}to{{stroke-dashoffset:0}}}}@keyframes pulse{{0%,100%{{opacity:.58}}50%{{opacity:1}}}}
+.card{{fill:var(--paper);stroke:var(--line);stroke-width:1}}.accent{{fill:var(--accent)}}.rule{{stroke:var(--line);stroke-width:1}}.enter{{opacity:1}}@keyframes rise{{from{{opacity:0}}to{{opacity:1}}}}@keyframes draw{{from{{stroke-dashoffset:1200}}to{{stroke-dashoffset:0}}}}@keyframes pulse{{0%,100%{{opacity:.58}}50%{{opacity:1}}}}
 {motion}{static_css}
-@media(prefers-reduced-motion:reduce){{*,*::before,*::after{{animation:none!important;transition:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}}.motion{{display:none!important}}}}
+@media(prefers-reduced-motion:reduce){{*,*::before,*::after{{animation:none!important;transition:none!important;opacity:1!important;stroke-dashoffset:0!important}}.motion{{display:none!important}}}}
 </style>"""
 
 
@@ -129,7 +129,16 @@ def write_card(name: str, width: int, height: int, contents: str, css: str, stat
 
 def image_data(url: str) -> tuple[str, str]:
     data = request(url)
-    mime = "image/jpeg" if url.lower().split("?")[0].endswith((".jpg", ".jpeg")) else "image/png"
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        mime = "image/png"
+    elif data.startswith(b"\xff\xd8\xff"):
+        mime = "image/jpeg"
+    elif data.startswith((b"GIF87a", b"GIF89a")):
+        mime = "image/gif"
+    elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        mime = "image/webp"
+    else:
+        raise ValueError("Portrait URL did not return a supported image")
     return mime, base64.b64encode(data).decode("ascii")
 
 
@@ -147,20 +156,10 @@ def hero(profile: dict[str, Any], css: str, static: bool) -> None:
         except (urllib.error.URLError, ValueError):
             portrait = ""
     smil = "" if static else '<animate attributeName="opacity" values=".45;1;.45" dur="4s" repeatCount="indefinite" class="motion"/>'
-    content = f'''<g class="enter"><text x="46" y="42" class="mono faint" font-size="12" letter-spacing="2">{login.upper()} / PROFILE NOTES</text><text x="46" y="116" class="serif" font-size="58">{name}</text><text x="48" y="153" class="sans muted" font-size="16">{one_liner}</text><text x="48" y="198" class="mono faint" font-size="11" letter-spacing="1.2">{location.upper()}  ·  BUILDING WITH INTENT</text><path d="M48 222H852" class="rule"/><circle cx="48" cy="258" r="4" class="accent pulse">{smil}</circle><text x="62" y="262" class="mono muted" font-size="11">SECURITY × ENGINEERING × BUSINESS</text>{portrait}</g>'''
+    education = escape(profile.get("education", "").upper())
+    interests = escape(profile.get("interests", "").upper())
+    content = f'''<g class="enter"><text x="46" y="42" class="mono faint" font-size="12" letter-spacing="2">{login.upper()} / PROFILE</text><text x="46" y="116" class="serif" font-size="58">{name}</text><text x="48" y="153" class="sans muted" font-size="16">{one_liner}</text><text x="48" y="198" class="mono faint" font-size="11" letter-spacing="1.2">{education}  ·  {location.upper()}</text><path d="M48 222H852" class="rule"/><circle cx="48" cy="258" r="4" class="accent pulse">{smil}</circle><text x="62" y="262" class="mono muted" font-size="11">{interests}</text>{portrait}</g>'''
     write_card("hero.svg", 900, 286, content, css, static)
-
-
-def tiles(profile: dict[str, Any], css: str, static: bool, delay_step: float) -> list[str]:
-    names = ["Website", "LinkedIn", "GitHub"]
-    links = profile["links"]
-    tags = ["01 / THE HOME BASE", "02 / CONNECT", "03 / THE CODE"]
-    for index, (name, url) in enumerate(zip(names, links)):
-        local_css = common_style(font_css, delay_step + index * .12, static)
-        content = f'''<g class="enter"><text x="26" y="40" class="mono faint" font-size="10" letter-spacing="1.5">{tags[index]}</text><text x="26" y="82" class="serif" font-size="30">{escape(name)}</text><text x="26" y="112" class="mono muted" font-size="10">{escape(url.replace("https://", "").rstrip("/"))}</text><path d="M26 132H254" class="rule"/><text x="26" y="164" class="sans muted" font-size="13">Open profile ↗</text><path d="M226 154l8 8-8 8" fill="none" stroke="var(--accent)" stroke-width="1.6"/></g>'''
-        filename = f"tile-{index + 1}.svg"
-        write_card(filename, 280, 190, content, local_css, static)
-    return [f"cards/tile-{i}.svg" for i in range(1, 4)]
 
 
 def stats_and_months(data: dict[str, Any]) -> tuple[list[tuple[str, int]], int, int, str]:
@@ -261,13 +260,10 @@ def contribution_graph(data: dict[str, Any], profile: dict[str, Any], css: str, 
     write_card("contributions-graph.svg", 900, 224, content, css, static)
 
 
-def readme(profile: dict[str, Any], tiles_list: list[str], repo_paths: list[str]) -> str:
-    tile_tags = " ".join(f'<a href="{escape(url)}"><img src="{tile}" width="32.5%" alt="{escape(title)}" /></a>' for tile, title, url in zip(tiles_list, ("Website", "LinkedIn", "GitHub"), profile["links"]))
+def readme(profile: dict[str, Any], repo_paths: list[str]) -> str:
     repo_tags = "\n".join(f'<a href="{escape(repo["url"])}"><img src="{path}" width="100%" alt="{escape(repo["name"])} repository card" /></a>' for path, repo in zip(repo_paths, profile.get("featured_repos", [])))
     return f'''<!-- Generated by build_cards.py. Edit profile.json; cards are refreshed daily. -->
 <p align="center"><img src="cards/hero.svg" width="100%" alt="{escape(profile['name'])} — animated introduction" /></p>
-
-{tile_tags}
 
 <p align="center"><img src="cards/contributions-monthly.svg" width="100%" alt="Monthly contributions, current streak, active days, and busiest day" /></p>
 
@@ -290,13 +286,14 @@ def main() -> int:
     base_delay = 0.15
     css = common_style(font_css, base_delay, static)
     hero(profile, css, static)
-    tiles_list = tiles(profile, css, static, 1.05)
     contribution_chart(data, common_style(font_css, 1.7, static), static)
     repo_paths = repo_cards(profile, css, static, 2.3)
     contribution_graph(data, profile, common_style(font_css, 3.8 + len(repo_paths)*.28, static), static)
-    (ROOT / "README.md").write_text(readme(profile, tiles_list, repo_paths), encoding="utf-8")
+    for tile in CARDS.glob("tile-*.svg"):
+        tile.unlink()
+    (ROOT / "README.md").write_text(readme(profile, repo_paths), encoding="utf-8")
     mode = "static" if static else "animated"
-    print(f"Rendered {3 + len(tiles_list) + len(repo_paths)} SVG cards ({mode}) into {CARDS}")
+    print(f"Rendered {3 + len(repo_paths)} SVG cards ({mode}) into {CARDS}")
     return 0
 
 
